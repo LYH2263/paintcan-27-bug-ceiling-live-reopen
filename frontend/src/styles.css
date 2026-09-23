@@ -1,0 +1,28 @@
+:root { --bg:#e8f4fc; --line:#3a7ca5; --panel:#fff; --text:#1a3a4a; }
+body { margin:0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text);
+  background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 24px 24px; background-color: #dceef8; }
+.blueprint header { display:flex; flex-wrap:wrap; gap:1rem; align-items:center; padding:0.75rem 1rem; background:#fff; border-bottom:2px solid var(--line); }
+.blueprint nav { display:flex; flex-wrap:wrap; gap:0.75rem; margin-left:auto; }
+.page { margin:1rem; max-width:900px; background:var(--panel); padding:1rem; border:2px dashed var(--line); }
+button { background:var(--line); color:#fff; border:0; padding:0.4rem 0.8rem; border-radius:4px; }
+table { width:100%; border-collapse:collapse; }
+th,td { border:1px solid #aacce0; padding:0.35rem; }
+.hero-num { font-size:2rem; color: var(--line); font-weight:700; }
+a { color: var(--line); }
+.switch { display:flex; align-items:center; gap:0.4rem; margin:0.75rem 0; font-weight:600; }
+.sub { display:flex; flex-wrap:wrap; gap:1rem; margin:0.25rem 0 0.75rem 1.25rem; padding:0.5rem 0.75rem; border-left:3px solid var(--line); }
+.sub label, .rules-grid label { display:flex; flex-direction:column; gap:0.25rem; font-size:0.9rem; }
+input[type=number] { width:9rem; padding:0.3rem; border:1px solid var(--line); border-radius:3px; }
+.result { display:flex; flex-wrap:wrap; gap:1rem; margin-top:1rem; }
+.stat { flex:1 1 9rem; min-width:9rem; padding:0.75rem 1rem; border:2px dashed var(--line); border-radius:6px; background:#f4fafe; }
+.stat h2 { margin:0 0 0.4rem; font-size:1rem; letter-spacing:0.1em; }
+.stat.total { border-style:solid; background:#e3f1fa; }
+.rules-grid { display:flex; flex-wrap:wrap; gap:1rem; margin-bottom:1rem; }
+.rules-grid fieldset { flex:1 1 16rem; border:2px dashed var(--line); border-radius:6px; }
+.rules-grid legend { padding:0 0.4rem; font-weight:700; }
+.err { color:#b3261e; font-weight:600; }
+.ok { color:#1b7a3d; font-weight:600; margin-left:0.75rem; }
+.row { cursor:pointer; }
+.row:hover { background:#eaf5fc; }
+.detail { margin-top:1rem; padding:0.75rem 1rem; border:2px solid var(--line); border-radius:6px; background:#f4fafe; }
