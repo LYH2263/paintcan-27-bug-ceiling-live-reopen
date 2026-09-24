@@ -87,6 +87,59 @@ def test_persist_pins_snapshot_and_history(client):
     assert fresh["ceiling_liters"] == 6.67
 
 
+def test_reopen_never_follows_live_defaults_or_rewrites_db(client):
+    # Two ceiling runs: id parity used to decide whether wall liters drifted.
+    first = client.post("/api/estimate",
+                        json={"room_id": 1, "persist": True, "ceiling_enabled": True}).json()
+    second = client.post("/api/estimate",
+                         json={"room_id": 1, "persist": True, "ceiling_enabled": True}).json()
+
+    # Change BOTH wall and ceiling defaults after the fact.
+    client.post("/api/settings", json={
+        "ceiling_coverage": 6, "ceiling_coats": 3, "coverage": 4, "coats": 4})
+    for j in (first, second):
+        detail = client.get(f"/api/history/{j['run_id']}").json()
+        res = detail["result"]
+        assert res["ceiling_liters"] == 5.0
+        assert res["ceiling_coverage"] == 8.0 and res["ceiling_coats"] == 2
+        assert res["liters"] == 11.6
+        assert res["coverage"] == 8.0 and res["coats"] == 2
+        assert res["ceiling_enabled"] is True
+        assert res["total_liters"] == 16.6
+        assert "live_reopen" not in detail
+
+    # Removing the current ceiling defaults entirely must not change a thing.
+    import app.db as db
+    with db.connect() as conn:
+        conn.execute("DELETE FROM settings WHERE key LIKE 'ceiling_%'")
+    detail = client.get(f"/api/history/{first['run_id']}").json()["result"]
+    assert detail["ceiling_liters"] == 5.0
+    assert detail["ceiling_enabled"] is True
+    assert detail["liters"] == 11.6
+
+    # A reopen is read-only: the stored result_json is still the write snapshot.
+    import json
+    with db.connect() as conn:
+        raw = conn.execute("SELECT result_json FROM calc_runs WHERE id=?",
+                           (first["run_id"],)).fetchone()["result_json"]
+    stored = json.loads(raw)
+    assert stored["ceiling_liters"] == 5.0 and stored["liters"] == 11.6
+
+    # Only brand-new estimates pick up the live defaults (repo fallback 8.0/2).
+    fresh = client.post("/api/estimate",
+                        json={"room_id": 1, "persist": False, "ceiling_enabled": True}).json()
+    assert fresh["ceiling_liters"] == 5.0
+
+
+def test_reopen_legacy_wall_only_run_stays_wall_only(client):
+    # Seed run id=1 predates the ceiling module: no ceiling keys at all.
+    detail = client.get("/api/history/1").json()
+    res = detail["result"]
+    assert "ceiling_enabled" not in res
+    assert "ceiling_liters" not in res and "total_liters" not in res
+    assert res["liters"] == 11.6
+
+
 def test_history_unknown_id_404(client):
     assert client.get("/api/history/999999").status_code == 404
 
