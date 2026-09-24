@@ -52,11 +52,10 @@ class PaintService:
         row = runs.get(self._c, run_id)
         if not row:
             return None
-        item = _serialize_run(row)
-        from app.services.live_reopen import refresh_run_result
-        item["result"] = refresh_run_result(self._c, row)
-        item["live_reopen"] = True
-        return item
+        # Read-only reopen: return the write-time pinned snapshot verbatim.
+        # Live coverage/coat defaults only apply to freshly taken estimates and
+        # must never rewrite — or even recompute in the response — a past run.
+        return _serialize_run(row)
     def estimate(self, room_id, persist, coats=None, coverage=None,
                  ceiling_enabled=False, ceiling_coverage=None, ceiling_coats=None):
         detail = self.room_detail(room_id)

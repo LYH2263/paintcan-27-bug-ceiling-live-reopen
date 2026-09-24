@@ -87,6 +87,54 @@ def test_persist_pins_snapshot_and_history(client):
     assert fresh["ceiling_liters"] == 6.67
 
 
+def test_readonly_reopen_never_drifts_or_rewrites(client):
+    # Two persisted runs so both id parities are covered (the old reopen path
+    # rewrote wall liters only for even ids).
+    ids = [
+        client.post("/api/estimate",
+                    json={"room_id": 1, "persist": True, "ceiling_enabled": True}
+                    ).json()["run_id"]
+        for _ in range(2)
+    ]
+    # Plus a ceiling-disabled run: its switch and wall-only shape must persist too.
+    ids.append(client.post("/api/estimate",
+                           json={"room_id": 1, "persist": True}).json()["run_id"])
+
+    import app.db as db
+    pinned = {rid: client.get(f"/api/history/{rid}").json() for rid in ids}
+    snapshots_before = {rid: db.connect().execute(
+        "SELECT result_json FROM calc_runs WHERE id=?", (rid,)).fetchone()[0]
+        for rid in ids}
+
+    enabled = pinned[ids[0]]["result"]
+    assert enabled["liters"] == 11.6 and enabled["ceiling_liters"] == 5.0
+    assert enabled["ceiling_enabled"] is True and enabled["total_liters"] == 16.6
+    disabled = pinned[ids[2]]["result"]
+    assert disabled.get("ceiling_enabled") is not True and disabled["liters"] == 11.6
+
+    # Tighten/change BOTH live defaults (ceiling and wall).
+    client.post("/api/settings", json={"ceiling_coverage": 6, "ceiling_coats": 3,
+                                       "coverage": 4, "coats": 1})
+
+    # Reopen repeatedly; every read returns the same write-time group and never
+    # mutates the stored result_json.
+    for _ in range(2):
+        for rid in ids:
+            got = client.get(f"/api/history/{rid}").json()["result"]
+            assert got == pinned[rid]["result"]
+            assert "live_reopen" not in client.get(f"/api/history/{rid}").json()
+            row = db.connect().execute(
+                "SELECT result_json FROM calc_runs WHERE id=?", (rid,)).fetchone()[0]
+            assert row == snapshots_before[rid]
+
+    # A fresh on-the-spot estimate still follows the new live defaults.
+    fresh = client.post("/api/estimate",
+                        json={"room_id": 1, "persist": False, "ceiling_enabled": True}).json()
+    assert fresh["ceiling_coverage"] == 6.0 and fresh["ceiling_coats"] == 3
+    assert fresh["coverage"] == 4.0 and fresh["coats"] == 1
+    assert fresh["ceiling_liters"] == 10.0  # 20 m2 * 3 / 6
+
+
 def test_history_unknown_id_404(client):
     assert client.get("/api/history/999999").status_code == 404
 

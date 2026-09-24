@@ -49,7 +49,7 @@ const open = async (id) => {
         <li>墙面：{{ selected.result?.net_m2 }} m² →
           <strong>{{ selected.result?.liters }} L</strong>
           （{{ selected.result?.coats }} 遍 / {{ selected.result?.coverage }} m²/L）</li>
-        <li v-if="selected.result?.ceiling_enabled || selected.live_reopen">
+        <li v-if="selected.result?.ceiling_enabled">
           天花：{{ selected.result.ceiling_m2 }} m² →
           <strong>{{ selected.result.ceiling_liters }} L</strong>
           （{{ selected.result.ceiling_coats }} 遍 / {{ selected.result.ceiling_coverage }} m²/L）
